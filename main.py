@@ -9,33 +9,45 @@ REVEAL_CARD = 1.8
 
 # --------------------------- GUESSING TIMER ---------------------------- #
 def guessing_timer(count, word_dict):
-    if count > 0:
-        timer = window.after(1000, guessing_timer, count - 1, word_dict)
-    else:
-        back_of_card(word_dict)
-    # window.after_cancel(timer)
+    timer = window.after(1000, guessing_timer, count - 1, word_dict)
+    if count < 0.0:
+        english_card(word_dict)
+        window.after_cancel(timer)
 
-
-# --------------------------- BACK OF CARD ----------------------------- #
-def back_of_card(english_word):
-    english_card = canvas.create_image(400, 263, image=card_back)
-    canvas.itemconfig(english_card, image=card_back)
-    english_language_text = canvas.create_text(400, 150, text="Language", fill="white", font=(FONT_NAME, 40, "italic"))
-    english_word_text = canvas.create_text(400, 263, text="word", fill="white", font=(FONT_NAME, 60, "bold"))
-    canvas.itemconfig(english_language_text, text="English")
-    canvas.itemconfig(english_word_text, text=english_word["English"])
 
 # ---------------------------- NEXT CARD ------------------------------- #
-def next_card():
-    # Access CSV  file
-    data = pandas.read_csv("data/french_words.csv")
-    to_learn = data.to_dict(orient="records")
-    word = random.choice(to_learn)
+def new_card():
+    words = study_words()
+    french_card(words)
+    guessing_timer(REVEAL_CARD, words)
 
-    guessing_timer(REVEAL_CARD, word)
 
-    canvas.itemconfig(language_text, text="French")
-    canvas.itemconfig(word_text, text=word["French"])
+def study_words():
+    try:
+        data = pandas.read_csv("data/words_to_learn.csv")
+    except FileNotFoundError:
+        data = pandas.read_csv("data/french_words.csv")
+        to_learn = data.to_dict(orient="records")
+        return random.choice(to_learn)
+    else:
+        to_learn = data.to_dict(orient="records")
+        return random.choice(to_learn)
+
+
+def french_card(french_word):
+    canvas.create_image(400, 263, image=card_front)
+    french_language_text = canvas.create_text(400, 150, text="Language", font=(FONT_NAME, 40, "italic"))
+    french_word_text = canvas.create_text(400, 263, text="word", font=(FONT_NAME, 60, "bold"))
+    canvas.itemconfig(french_language_text, text="French")
+    canvas.itemconfig(french_word_text, text=french_word["French"])
+
+
+def english_card(english_word):
+    canvas.create_image(400, 263, image=card_back)
+    english_language_text = canvas.create_text(400, 150, text="Language", font=(FONT_NAME, 40, "italic"))
+    english_word_text = canvas.create_text(400, 263, text="word", font=(FONT_NAME, 60, "bold"))
+    canvas.itemconfig(english_language_text, text="English")
+    canvas.itemconfig(english_word_text, text=english_word["English"])
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -44,28 +56,27 @@ window = Tk()
 window.title("Flash Cards")
 window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
 
-# Create and show front of the card
+# Create inside the window
 canvas = Canvas(width=800, height=526, bg=BACKGROUND_COLOR, highlightthickness=0)
 
+# Create the template card
 card_front = PhotoImage(file="images/card_front.png")
 card_back = PhotoImage(file="images/card_back.png")
-flash_card = canvas.create_image(400, 263, image=card_front)
-
+canvas.create_image(400, 263, image=card_front)
 language_text = canvas.create_text(400, 150, text="Language",  fill="black", font=(FONT_NAME, 40, "italic"))
 word_text = canvas.create_text(400, 263, text="word",  fill="black", font=(FONT_NAME, 60, "bold"))
-
 canvas.grid(column=0, row=0, columnspan=2)
 
 # Create and show right button
 right_button = PhotoImage(file="images/right.png")
-known_button = Button(image=right_button, highlightthickness=0, command=next_card)
+known_button = Button(image=right_button, highlightthickness=0, command=new_card)
 known_button.grid(column=1, row=1)
 
 # Create and show wrong button
 wrong_button = PhotoImage(file="images/wrong.png")
-unknown_button = Button(image=wrong_button, highlightthickness=0, command=next_card)
+unknown_button = Button(image=wrong_button, highlightthickness=0, command=new_card)
 unknown_button.grid(column=0, row=1)
 
-next_card()
+new_card()
 window.mainloop()
 
