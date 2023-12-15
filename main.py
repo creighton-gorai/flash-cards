@@ -1,16 +1,26 @@
 from tkinter import *
 import pandas
 import random
+import os.path
 
 BACKGROUND_COLOR = "#B1DDC6"
 FONT_NAME = "Arial"
-
 current_card = {}
+to_learn = []
+
+
+def delete_entry():
+    global current_card
+    to_learn.remove(current_card)
+    french_card()
 
 
 def french_card():
+    # Took solution from video
     global current_card, flip_timer
     window.after_cancel(flip_timer)
+
+    # Change to new card in French
     current_card = random.choice(to_learn)
     canvas.create_image(400, 263, image=card_front)
     french_language_text = canvas.create_text(400, 150, text="Language", font=(FONT_NAME, 40, "italic"))
@@ -26,6 +36,7 @@ def english_card():
     english_word_text = canvas.create_text(400, 263, text="word", font=(FONT_NAME, 60, "bold"))
     canvas.itemconfig(english_language_text, text="English")
     canvas.itemconfig(english_word_text, text=current_card["English"])
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 
@@ -48,16 +59,18 @@ language_text = canvas.create_text(400, 150, text="Language",  fill="black", fon
 word_text = canvas.create_text(400, 263, text="word",  fill="black", font=(FONT_NAME, 60, "bold"))
 canvas.grid(column=0, row=0, columnspan=2)
 
-# Could make word global and access in each function
 try:
-    data = pandas.read_csv("data/words_to_learn.csv")
+    file = pandas.read_csv("data/words_to_learn.csv")
+    # List of dictionaries {'French' : word, 'English' : word}
+    to_learn = file.to_dict(orient="records")
 except FileNotFoundError:
-    data = pandas.read_csv("data/french_words.csv")
-    to_learn = data.to_dict(orient="records")
+    file = pandas.read_csv("data/french_words.csv")
+    # List of dictionaries {'French' : word, 'English' : word}
+    to_learn = file.to_dict(orient="records")
 
 # Create and show right button
 right_button = PhotoImage(file="images/right.png")
-known_button = Button(image=right_button, highlightthickness=0, command=french_card)
+known_button = Button(image=right_button, highlightthickness=0, command=delete_entry)
 known_button.grid(column=1, row=1)
 
 # Create and show wrong button
@@ -66,5 +79,8 @@ unknown_button = Button(image=wrong_button, highlightthickness=0, command=french
 unknown_button.grid(column=0, row=1)
 
 french_card()
+
 window.mainloop()
 
+new_file = pandas.DataFrame(to_learn)
+new_file.to_csv("data/words_to_learn.csv", index=False)
